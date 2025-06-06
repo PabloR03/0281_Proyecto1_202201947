@@ -1,0 +1,1 @@
+./sysinfos.o
