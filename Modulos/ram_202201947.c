@@ -42,7 +42,7 @@ static int raminfo_show(struct seq_file *m, void *v) {
     }
     
     // Imprimir en formato JSON
-    seq_printf(m, "{\"total\": %lu, \"libre\": %lu, \"uso\": %lu, \"porcentaje\": %d}\n",
+    seq_printf(m, "{\n\t\"total\": %lu,\n\t\"libre\": %lu,\n\t\"uso\": %lu,\n\t\"porcentajeUso\": %d\n}\n",
                 total_ram, free_ram, used_ram, ram_percent);
     
     return 0;
