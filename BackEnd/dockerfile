@@ -1,13 +1,31 @@
-FROM node:14
+# Usamos una imagen base de Go para construir la aplicación
+FROM golang:1.21-alpine AS builder
 
+# Establecemos el directorio de trabajo
 WORKDIR /app
 
-COPY package*.json ./
+# Copiamos los archivos necesarios
+COPY main.go .
 
-RUN npm install
+# Descargamos las dependencias y construimos la aplicación
+RUN go mod init monitor-agent && \
+    go mod tidy && \
+    CGO_ENABLED=0 GOOS=linux go build -o monitor-agent .
 
-COPY . .
+# Usamos una imagen minimalista para la etapa de ejecución
+FROM alpine:latest
 
-EXPOSE 3000
+# Instalamos dependencias necesarias (si las hay)
+RUN apk --no-cache add ca-certificates
 
-CMD ["npm", "start"]
+# Creamos el directorio /proc personalizado (si es necesario)
+RUN mkdir -p /proc
+
+# Copiamos el binario desde el builder
+COPY --from=builder /app/monitor-agent /monitor-agent
+
+# Exponemos el puerto que usa la aplicación
+EXPOSE 8080
+
+# Comando para ejecutar la aplicación
+CMD ["/monitor-agent"]

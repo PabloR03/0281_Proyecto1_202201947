@@ -13,6 +13,28 @@ Ejecutando el Programa de Go
 sudo ./monitor-agent
 ```
 
+--
+
+dockerfile construir  local
+```
+docker build -t monitor-agent .
+```
+
+dockerfile ejecutar  local
+```
+docker run -d --name monitor -p 8080:8080 -v /proc:/host/proc:ro monitor-agent
+```
+
+Para que otros puedan descargarla
+```
+docker pull pablo03r/monitor-agent:1.0
+```
+Ejecutar la imagen descargada
+```
+docker run -d --name monitor -p 8080:8080 pablo03r/monitor-agent:1.0
+```
+
+
 ### Script - Modulos
 Crear Modulos
 ```
