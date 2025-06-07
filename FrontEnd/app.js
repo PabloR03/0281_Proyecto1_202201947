@@ -1,9 +1,21 @@
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
+const { Pool } = require('pg');
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configuración de la conexión a PostgreSQL
+const pool = new Pool({
+    user: 'admin',
+    host: 'localhost',
+    database: 'system_metrics',
+    password: 'admin123',
+    port: 5432,
+});
+
 
 // Función para formatear datos para la vista EJS
 function formatMetricForView(data, type) {
@@ -96,6 +108,37 @@ app.use(express.json());
 // URL de tu backend en Go
 const BACKEND_URL = 'http://localhost:8080';
 
+// Función para guardar métricas en la base de datos
+async function saveMetrics(cpuData, ramData) {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        
+        // Guardar métrica CPU
+        if (typeof cpuData === 'object' && cpuData.porcentajeUso !== undefined) {
+            await client.query(
+                'INSERT INTO cpu_metrics (percentage_usage) VALUES ($1)',
+                [cpuData.porcentajeUso]
+            );
+        }
+
+        // Guardar métrica RAM
+        if (typeof ramData === 'object' && ramData.total !== undefined) {
+            await client.query(
+                'INSERT INTO ram_metrics (total_mb, used_mb, free_mb, percentage_usage) VALUES ($1, $2, $3, $4)',
+                [ramData.total, ramData.uso, ramData.libre, ramData.porcentajeUso || Math.round((ramData.uso / ramData.total) * 100)]
+            );
+        }
+
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error al guardar métricas:', error);
+    } finally {
+        client.release();
+    }
+}
+
 // Función para obtener datos del backend
 async function getSystemMetrics() {
     try {
@@ -104,6 +147,9 @@ async function getSystemMetrics() {
             axios.get(`${BACKEND_URL}/ram`).catch(err => ({ data: `Error: ${err.message}` })),
             axios.get(`${BACKEND_URL}/health`).catch(err => ({ data: `Error: ${err.message}` }))
         ]);
+
+        // Guardar métricas en la base de datos
+        await saveMetrics(cpuResponse.data, ramResponse.data);
 
         return {
             cpu: cpuResponse.data,
@@ -161,15 +207,57 @@ app.get('/api/ram', async (req, res) => {
     }
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
+// Ruta para ver datos de CPU
+app.get('/debug/cpu', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM cpu_metrics ORDER BY timestamp DESC LIMIT 10');
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Ruta para ver datos de RAM
+app.get('/debug/ram', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM ram_metrics ORDER BY timestamp DESC LIMIT 10');
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Iniciar el servidor
+app.listen(PORT, async () => {
     console.log(`Servidor frontend corriendo en http://localhost:${PORT}`);
     console.log(`Conectándose al backend en ${BACKEND_URL}`);
-    console.log('Endpoints disponibles:');
-    console.log('  - http://localhost:' + PORT + ' (Vista principal)');
-    console.log('  - http://localhost:' + PORT + '/api/metrics (Todas las métricas)');
-    console.log('  - http://localhost:' + PORT + '/api/cpu (Solo CPU)');
-    console.log('  - http://localhost:' + PORT + '/api/ram (Solo RAM)');
+    
+    // Inicializar la base de datos
+    try {
+        const client = await pool.connect();
+        try {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS cpu_metrics (
+                    id SERIAL PRIMARY KEY,
+                    percentage_usage FLOAT NOT NULL,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE TABLE IF NOT EXISTS ram_metrics (
+                    id SERIAL PRIMARY KEY,
+                    total_mb INTEGER NOT NULL,
+                    used_mb INTEGER NOT NULL,
+                    free_mb INTEGER NOT NULL,
+                    percentage_usage FLOAT NOT NULL,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+            console.log('Tablas de base de datos inicializadas');
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        console.error('Error al inicializar la base de datos:', error);
+    }
 });
 
 module.exports = app;

@@ -61,3 +61,31 @@ Eliminar/Detiene contenedores
 ```
 ./remove_containers.sh
 ```
+
+
+### DOCKER
+
+Docker-compose Ejecutar el YML
+
+```
+docker-compose up -d
+```
+
+Eliminar todo el Docker compose 
+```
+docker-compose down --rmi all -v
+```
+
+Examinar la Base de datos
+```
+# Conectarte al contenedor
+docker exec -it system_metrics_db bash
+
+# Una vez dentro del contenedor, conectarte a PostgreSQL
+psql -U admin -d system_metrics
+
+# Ejecutar consultas
+\dt  # Listar tablas
+SELECT * FROM cpu_metrics;
+SELECT * FROM ram_metrics;
+```
