@@ -9,13 +9,12 @@ const PORT = process.env.PORT || 3000;
 
 // Configuración de la conexión a PostgreSQL
 const pool = new Pool({
-    user: 'admin',
-    host: 'localhost',
-    database: 'system_metrics',
-    password: 'admin123',
-    port: 5432,
+    user: process.env.DB_USER || 'admin',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_NAME || 'system_metrics',
+    password: process.env.DB_PASSWORD || 'admin123',
+    port: process.env.DB_PORT || 5432,
 });
-
 
 // Función para formatear datos para la vista EJS
 function formatMetricForView(data, type) {
@@ -106,7 +105,7 @@ app.use(express.static('public'));
 app.use(express.json());
 
 // URL de tu backend en Go
-const BACKEND_URL = 'http://localhost:8080';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 
 // Función para guardar métricas en la base de datos
 async function saveMetrics(cpuData, ramData) {

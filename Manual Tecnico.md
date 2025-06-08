@@ -5,7 +5,7 @@ Nota: Para cada carpeta tener una terminal.
 
 Compilando el programa de Go
 ```
-go build -o monitor-agent Recolector.go
+go build -o monitor-agent main.go
 ```
 
 Ejecutando el Programa de Go
@@ -89,3 +89,22 @@ psql -U admin -d system_metrics
 SELECT * FROM cpu_metrics;
 SELECT * FROM ram_metrics;
 ```
+
+
+DOCKER-COMPOSE 
+```
+Comando	Descripción
+docker-compose up	Inicia los servicios usando las imágenes existentes.
+docker-compose up --build	Reconstruye las imágenes antes de iniciar.
+docker-compose down	Detiene y elimina los contenedores (pero no las imágenes).
+docker-compose down -v	Detiene los contenedores y elimina los volúmenes.
+```
+
+
+Pasos Finales de Ejecucion 
+
+Ejecutar los Scripts
+docker start monitor
+sudo iptables -I INPUT -p tcp --dport 8080 -j ACCEPT
+sudo docker-compose up
+
