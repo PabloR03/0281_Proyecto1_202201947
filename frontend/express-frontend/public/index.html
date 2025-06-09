@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Sistema - CPU y RAM</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🖥️ Monitor de Sistema</h1>
+            <div class="status-indicator">
+                <span id="connectionStatus" class="status-dot offline"></span>
+                <span id="statusText">Desconectado</span>
+                <span id="lastUpdate">Nunca</span>
+            </div>
+        </header>
+
+        <div class="dashboard">
+            <!-- Tarjetas de Métricas Actuales -->
+            <div class="metrics-cards">
+                <div class="metric-card cpu">
+                    <div class="metric-header">
+                        <h3>💻 CPU</h3>
+                        <span id="cpuPercentage" class="metric-value">0%</span>
+                    </div>
+                    <div class="metric-progress">
+                        <div id="cpuProgressBar" class="progress-bar cpu-progress"></div>
+                    </div>
+                    <div class="metric-info">
+                        <small>Uso actual del procesador</small>
+                    </div>
+                </div>
+
+                <div class="metric-card ram">
+                    <div class="metric-header">
+                        <h3>🧠 RAM</h3>
+                        <span id="ramPercentage" class="metric-value">0%</span>
+                    </div>
+                    <div class="metric-progress">
+                        <div id="ramProgressBar" class="progress-bar ram-progress"></div>
+                    </div>
+                    <div class="metric-info">
+                        <small id="ramDetails">0 MB / 0 MB</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficas -->
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>📊 Histórico de CPU</h3>
+                    <canvas id="cpuChart"></canvas>
+                </div>
+
+                <div class="chart-card">
+                    <h3>📊 Histórico de RAM</h3>
+                    <canvas id="ramChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfica Combinada -->
+            <div class="chart-card full-width">
+                <h3>📈 Métricas Combinadas</h3>
+                <canvas id="combinedChart"></canvas>
+            </div>
+
+            <!-- Controles -->
+            <div class="controls">
+                <button id="pauseBtn" class="btn">⏸️ Pausar</button>
+                <button id="clearBtn" class="btn secondary">🗑️ Limpiar</button>
+                <button id="refreshBtn" class="btn">🔄 Actualizar</button>
+                <select id="timeRange" class="select">
+                    <option value="20">Últimos 20 registros</option>
+                    <option value="50">Últimos 50 registros</option>
+                    <option value="100">Últimos 100 registros</option>
+                </select>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Monitor de Sistema - Datos actualizados cada 5 segundos</p>
+            <div class="footer-stats">
+                <span>Registros CPU: <span id="cpuCount">0</span></span>
+                <span>Registros RAM: <span id="ramCount">0</span></span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="js/charts.js"></script>
+</body>
+</html>
