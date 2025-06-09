@@ -79,17 +79,21 @@ docker-compose down --rmi all -v
 Examinar la Base de datos
 ```
 # Conectarte al contenedor
-docker exec -it system_metrics_db bash
-
-# Una vez dentro del contenedor, conectarte a PostgreSQL
-psql -U admin -d system_metrics
+docker exec -it metrics-postgres psql -U metrics_202201947 -d metrics_db
 
 # Ejecutar consultas
 \dt  # Listar tablas
-SELECT * FROM cpu_metrics;
-SELECT * FROM ram_metrics;
-```
+# Ver datos de CPU
+SELECT * FROM cpu_metrics ORDER BY created_at DESC LIMIT 10;
 
+# Ver datos de RAM
+SELECT * FROM ram_metrics ORDER BY created_at DESC LIMIT 10;
+# Detener servicios
+docker-compose down
+
+# Detener y eliminar volúmenes (¡CUIDADO! Borra todos los datos)
+docker-compose down -v
+```
 
 DOCKER-COMPOSE 
 ```

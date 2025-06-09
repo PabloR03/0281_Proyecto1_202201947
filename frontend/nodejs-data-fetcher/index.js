@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const config = require('./config');
+const db = require('./database');
 
 const app = express();
 
@@ -9,7 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Almacenamiento de datos en memoria
+// Almacenamiento de datos en memoria (mantiene la funcionalidad original)
 let metricsData = {
     cpu: [],
     ram: [],
@@ -51,11 +52,19 @@ async function updateCPUData() {
             raw: cpuData
         };
         
+        // Guardar en memoria (funcionalidad original)
         metricsData.cpu.push(processedData);
         
-        // Mantener solo los últimos 100 registros
+        // Mantener solo los últimos 100 registros en memoria
         if (metricsData.cpu.length > 100) {
             metricsData.cpu.shift();
+        }
+        
+        // Guardar en base de datos (nueva funcionalidad)
+        try {
+            await db.insertCPUData(processedData);
+        } catch (dbError) {
+            console.error('Error guardando CPU en BD (continuando normalmente):', dbError.message);
         }
         
         console.log(`CPU actualizada: ${processedData.porcentajeUso}%`);
@@ -82,11 +91,19 @@ async function updateRAMData() {
             raw: ramData
         };
         
+        // Guardar en memoria (funcionalidad original)
         metricsData.ram.push(processedData);
         
-        // Mantener solo los últimos 100 registros
+        // Mantener solo los últimos 100 registros en memoria
         if (metricsData.ram.length > 100) {
             metricsData.ram.shift();
+        }
+        
+        // Guardar en base de datos (nueva funcionalidad)
+        try {
+            await db.insertRAMData(processedData);
+        } catch (dbError) {
+            console.error('Error guardando RAM en BD (continuando normalmente):', dbError.message);
         }
         
         console.log(`RAM actualizada: ${processedData.porcentajeUso}% (${processedData.uso}/${processedData.total} MB)`);
@@ -106,7 +123,7 @@ async function updateMetrics() {
     metricsData.lastUpdate = new Date().toISOString();
 }
 
-// Endpoints API
+// Endpoints API (mantienen la funcionalidad original)
 app.get('/api/metrics', (req, res) => {
     res.json({
         cpu: metricsData.cpu,
@@ -144,6 +161,20 @@ app.get('/api/metrics/latest', (req, res) => {
     res.json(latest);
 });
 
+// Nuevo endpoint para estadísticas de la base de datos (opcional)
+app.get('/api/database/stats', async (req, res) => {
+    try {
+        const stats = await db.getDatabaseStats();
+        if (stats) {
+            res.json(stats);
+        } else {
+            res.status(500).json({ error: 'No se pudieron obtener las estadísticas de la BD' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
@@ -157,6 +188,12 @@ app.get('/api/health', (req, res) => {
 // Inicializar el servicio
 async function startService() {
     console.log('Iniciando servicio NodeJS Data Fetcher...');
+    
+    // Verificar conectividad con la base de datos
+    const dbConnected = await db.testConnection();
+    if (!dbConnected) {
+        console.log('⚠️  Advertencia: No se pudo conectar con PostgreSQL, continuando sin BD');
+    }
     
     // Verificar conectividad con el backend
     try {
@@ -180,6 +217,7 @@ async function startService() {
     app.listen(config.port, () => {
         console.log(`🚀 Servicio NodeJS ejecutándose en puerto ${config.port}`);
         console.log(`📊 Datos disponibles en http://localhost:${config.port}/api/metrics`);
+        console.log(`💾 Estadísticas BD en http://localhost:${config.port}/api/database/stats`);
         console.log(`🔄 Actualizando métricas cada ${config.updateInterval}ms`);
     });
 }
@@ -191,6 +229,19 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Promesa rechazada no manejada:', reason);
+});
+
+// Cerrar conexiones al salir
+process.on('SIGINT', async () => {
+    console.log('\n🛑 Cerrando servicio...');
+    await db.closePool();
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('\n🛑 Cerrando servicio...');
+    await db.closePool();
+    process.exit(0);
 });
 
 // Iniciar servicio
