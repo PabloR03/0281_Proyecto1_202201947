@@ -216,10 +216,11 @@ function updateMetricCards(latest) {
         const ramPercent = latest.ram.porcentajeUso || 0;
         const ramUsed = latest.ram.uso || 0;
         const ramTotal = latest.ram.total || 0;
-        
+        const ramFree = ramTotal - ramUsed;
+
         elements.ramPercentage.textContent = `${ramPercent}%`;
         elements.ramProgressBar.style.width = `${ramPercent}%`;
-        elements.ramDetails.textContent = `${ramUsed} MB / ${ramTotal} MB`;
+        elements.ramDetails.textContent = `${ramUsed} MB / ${ramTotal} MB (Libre: ${ramFree} MB)`;
     }
 }
 
