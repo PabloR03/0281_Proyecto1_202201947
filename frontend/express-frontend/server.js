@@ -5,7 +5,9 @@ const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const NODEJS_API_URL = process.env.NODEJS_API_URL || 'http://localhost:3001';
+// Detectar si estamos en contenedor Docker y usar la URL apropiada
+const NODEJS_API_URL = process.env.NODEJS_API_URL || 
+    (process.env.NODE_ENV === 'production' ? 'http://host.docker.internal:3001' : 'http://localhost:3001');
 
 // Middleware
 app.use(cors());
@@ -76,7 +78,8 @@ app.get('/health', (req, res) => {
         status: 'OK',
         service: 'express-frontend',
         uptime: process.uptime(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        api_url: NODEJS_API_URL
     });
 });
 
