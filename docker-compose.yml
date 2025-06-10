@@ -26,9 +26,7 @@ services:
 
   # Backend Go
   backend:
-    build:
-      context: ./BackEnd
-      dockerfile: Dockerfile
+    image: pablo03r/202201947-sopes1-fase1-backend:latest
     container_name: monitor-agent-backend
     ports:
       - "8080:8080"
@@ -47,9 +45,7 @@ services:
 
   # API Node.js Data Fetcher
   nodejs-api:
-    build:
-      context: ./frontend/nodejs-data-fetcher
-      dockerfile: Dockerfile
+    image: pablo03r/202201947-sopes1-fase1-api:latest
     container_name: nodejs-data-fetcher
     ports:
       - "3001:3001"
@@ -71,9 +67,7 @@ services:
 
   # Frontend Express
   frontend:
-    build:
-      context: ./frontend/express-frontend
-      dockerfile: Dockerfile
+    image: pablo03r/202201947-sopes1-fase1-frontend:latest
     container_name: express-frontend
     ports:
       - "3000:3000"

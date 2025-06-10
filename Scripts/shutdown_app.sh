@@ -57,31 +57,45 @@ fi
 print_success "Archivo docker-compose.yml encontrado"
 
 # Mostrar contenedores actuales antes de detener
-print_status "Estado actual de contenedores:"
+print_status "Estado actual de contenedores del proyecto:"
 if command -v docker-compose &> /dev/null; then
-    docker-compose ps 2>/dev/null || echo "No hay contenedores corriendo"
+    docker-compose ps 2>/dev/null || echo "No hay contenedores del proyecto corriendo"
 else
-    docker compose ps 2>/dev/null || echo "No hay contenedores corriendo"
+    docker compose ps 2>/dev/null || echo "No hay contenedores del proyecto corriendo"
 fi
 
-# Proteger imagen alpine-stress antes de cualquier operación
-print_status "Verificando imagen alpine-stress..."
+# PROTECCIÓN CRÍTICA: Verificar y proteger imagen alpine-stress
+print_status "🛡️  VERIFICANDO Y PROTEGIENDO IMAGEN ALPINE-STRESS (CRÍTICA)..."
 ALPINE_STRESS_ID=$(docker images -q containerstack/alpine-stress:latest 2>/dev/null)
 if [ -n "$ALPINE_STRESS_ID" ]; then
-    print_success "Imagen alpine-stress encontrada y será protegida"
+    print_success "✅ Imagen alpine-stress encontrada (ID: ${ALPINE_STRESS_ID:0:12})"
+    print_success "🛡️  Imagen alpine-stress PROTEGIDA - NO será eliminada"
+    
+    # Crear tag adicional de respaldo por seguridad
+    docker tag containerstack/alpine-stress:latest alpine-stress-backup:safe 2>/dev/null || true
+    print_success "🔒 Tag de respaldo creado: alpine-stress-backup:safe"
 else
-    print_warning "Imagen alpine-stress no encontrada"
+    print_error "❌ IMAGEN ALPINE-STRESS NO ENCONTRADA - ESTO ES CRÍTICO"
+    print_error "La imagen alpine-stress es vital para tu proyecto"
+    read -p "¿Deseas continuar sin la protección de alpine-stress? (y/N): " continue_without
+    if [[ ! "$continue_without" =~ ^[Yy]$ ]]; then
+        print_error "Operación cancelada por seguridad"
+        exit 1
+    fi
 fi
 
 # Preguntar al usuario qué tipo de apagado quiere
 echo ""
 echo "Selecciona el tipo de apagado:"
-echo "1) Apagado suave (detener contenedores solamente)"
-echo "2) Apagado completo (detener contenedores y limpiar volúmenes)"
-echo "3) Apagado con limpieza (detener, limpiar volúmenes e imágenes no utilizadas)"
-echo "4) Cancelar"
+echo "1) 🔄 Apagado suave (detener contenedores solamente)"
+echo "2) 🧹 Apagado completo (detener contenedores y limpiar volúmenes)"
+echo "3) 🗑️  Apagado con limpieza (detener, limpiar volúmenes e imágenes no utilizadas)"
+echo "4) 🚨 Limpieza agresiva (eliminar también imágenes del proyecto de DockerHub)"
+echo "5) ❌ Cancelar"
 echo ""
-read -p "Ingresa tu opción (1-4): " choice
+echo "⚠️  NOTA: alpine-stress SIEMPRE será protegida en todas las opciones"
+echo ""
+read -p "Ingresa tu opción (1-5): " choice
 
 case $choice in
     1)
@@ -91,7 +105,7 @@ case $choice in
         else
             docker compose stop
         fi
-        print_success "Contenedores detenidos"
+        print_success "Contenedores detenidos (volúmenes preservados)"
         ;;
     2)
         print_status "Ejecutando apagado completo..."
@@ -110,19 +124,48 @@ case $choice in
             docker compose down -v
         fi
         
-        print_status "Limpiando imágenes no utilizadas (protegiendo alpine-stress)..."
-        # Limpiar imágenes pero proteger alpine-stress
-        docker image prune -f --filter "label!=keep=alpine-stress" &> /dev/null
+        print_status "🧹 Limpiando imágenes no utilizadas (PROTEGIENDO alpine-stress)..."
+        # Limpiar imágenes pero proteger alpine-stress y sus variantes
+        docker image prune -f &> /dev/null
         
-        print_status "Limpiando contenedores detenidos..."
+        print_status "🧹 Limpiando contenedores detenidos..."
         docker container prune -f &> /dev/null
         
-        print_status "Limpiando redes no utilizadas..."
+        print_status "🧹 Limpiando redes no utilizadas..."
         docker network prune -f &> /dev/null
         
-        print_success "Limpieza completa realizada"
+        print_success "Limpieza completa realizada (alpine-stress protegida)"
         ;;
     4)
+        print_status "Ejecutando limpieza agresiva..."
+        print_warning "⚠️  Esta opción eliminará las imágenes de DockerHub descargadas"
+        read -p "¿Estás seguro? Tendrás que descargarlas nuevamente (y/N): " confirm_aggressive
+        
+        if [[ "$confirm_aggressive" =~ ^[Yy]$ ]]; then
+            if command -v docker-compose &> /dev/null; then
+                docker-compose down -v
+            else
+                docker compose down -v
+            fi
+            
+            print_status "🗑️  Eliminando imágenes del proyecto de DockerHub..."
+            # Eliminar específicamente las imágenes del proyecto
+            docker rmi pablo03r/202201947-sopes1-fase1-backend:latest 2>/dev/null || true
+            docker rmi pablo03r/202201947-sopes1-fase1-api:latest 2>/dev/null || true
+            docker rmi pablo03r/202201947-sopes1-fase1-frontend:latest 2>/dev/null || true
+            
+            print_status "🧹 Limpieza completa del sistema..."
+            docker image prune -f &> /dev/null
+            docker container prune -f &> /dev/null
+            docker network prune -f &> /dev/null
+            
+            print_success "Limpieza agresiva completada (alpine-stress protegida)"
+        else
+            print_warning "Limpieza agresiva cancelada"
+            exit 0
+        fi
+        ;;
+    5)
         print_warning "Operación cancelada"
         exit 0
         ;;
@@ -133,7 +176,7 @@ case $choice in
 esac
 
 # Verificar que no hay contenedores de la aplicación corriendo
-print_status "Verificando que no hay contenedores corriendo..."
+print_status "Verificando que no hay contenedores del proyecto corriendo..."
 if command -v docker-compose &> /dev/null; then
     RUNNING_CONTAINERS=$(docker-compose ps -q 2>/dev/null)
 else
@@ -141,41 +184,69 @@ else
 fi
 
 if [ -z "$RUNNING_CONTAINERS" ]; then
-    print_success "No hay contenedores de la aplicación corriendo"
+    print_success "✅ No hay contenedores del proyecto corriendo"
 else
-    print_warning "Algunos contenedores aún están corriendo"
+    print_warning "⚠️  Algunos contenedores del proyecto aún están corriendo"
+    if command -v docker-compose &> /dev/null; then
+        docker-compose ps
+    else
+        docker compose ps
+    fi
 fi
 
-# Verificar que alpine-stress sigue disponible
-if [ -n "$ALPINE_STRESS_ID" ]; then
-    CURRENT_ALPINE_ID=$(docker images -q containerstack/alpine-stress:latest 2>/dev/null)
-    if [ "$ALPINE_STRESS_ID" = "$CURRENT_ALPINE_ID" ]; then
-        print_success "✅ Imagen alpine-stress protegida correctamente"
-    else
-        print_warning "⚠️  La imagen alpine-stress pudo haber sido afectada"
-    fi
+# VERIFICACIÓN CRÍTICA: Confirmar que alpine-stress sigue disponible
+print_status "🔍 VERIFICACIÓN CRÍTICA: Confirmando protección de alpine-stress..."
+CURRENT_ALPINE_ID=$(docker images -q containerstack/alpine-stress:latest 2>/dev/null)
+BACKUP_ALPINE_ID=$(docker images -q alpine-stress-backup:safe 2>/dev/null)
+
+if [ -n "$CURRENT_ALPINE_ID" ] && [ "$ALPINE_STRESS_ID" = "$CURRENT_ALPINE_ID" ]; then
+    print_success "✅ IMAGEN ALPINE-STRESS PROTEGIDA EXITOSAMENTE"
+    print_success "🛡️  ID original: ${ALPINE_STRESS_ID:0:12}"
+    print_success "🛡️  ID actual:   ${CURRENT_ALPINE_ID:0:12}"
+elif [ -n "$BACKUP_ALPINE_ID" ]; then
+    print_warning "⚠️  Imagen principal afectada, pero respaldo disponible"
+    print_status "🔄 Restaurando desde respaldo..."
+    docker tag alpine-stress-backup:safe containerstack/alpine-stress:latest
+    print_success "✅ Imagen alpine-stress restaurada desde respaldo"
+else
+    print_error "❌ CRÍTICO: IMAGEN ALPINE-STRESS PERDIDA"
+    print_error "Necesitarás volver a descargar: docker pull containerstack/alpine-stress:latest"
+fi
+
+# Limpiar tag de respaldo si todo está bien
+if [ -n "$CURRENT_ALPINE_ID" ] && [ "$ALPINE_STRESS_ID" = "$CURRENT_ALPINE_ID" ]; then
+    docker rmi alpine-stress-backup:safe 2>/dev/null || true
 fi
 
 # Mostrar resumen final
 echo ""
 echo "============================================"
-echo "✅ APAGADO COMPLETADO"
+echo "✅ APAGADO COMPLETADO EXITOSAMENTE"
 echo "============================================"
 echo ""
-print_success "Aplicación detenida correctamente"
+print_success "Monitor System App detenida correctamente"
 echo ""
-echo "📊 Estado final:"
+echo "📊 Estado final del proyecto:"
 if command -v docker-compose &> /dev/null; then
-    docker-compose ps 2>/dev/null || echo "No hay contenedores de la aplicación"
+    docker-compose ps 2>/dev/null || echo "   No hay contenedores del proyecto activos"
 else
-    docker compose ps 2>/dev/null || echo "No hay contenedores de la aplicación"
+    docker compose ps 2>/dev/null || echo "   No hay contenedores del proyecto activos"
+fi
+echo ""
+echo "🛡️  Estado de imagen crítica:"
+if docker inspect containerstack/alpine-stress:latest &> /dev/null; then
+    echo "   ✅ alpine-stress: PROTEGIDA y disponible"
+else
+    echo "   ❌ alpine-stress: NO disponible (requiere re-descarga)"
 fi
 echo ""
 echo "🚀 Para volver a iniciar la aplicación:"
 echo "   ./Scripts/deploy_app.sh"
 echo ""
-echo "📝 Para ver todos los contenedores Docker:"
-echo "   docker ps -a"
+echo "📝 Comandos útiles:"
+echo "   Ver contenedores:     docker ps -a"
+echo "   Ver imágenes:         docker images"
+echo "   Verificar alpine:     docker images containerstack/alpine-stress"
 echo ""
 echo "============================================"
-print_success "¡Apagado completado! 🛑"
+print_success "¡Apagado completado con protección alpine-stress! 🛑🛡️"

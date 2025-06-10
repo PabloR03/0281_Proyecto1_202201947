@@ -81,10 +81,14 @@ else
     docker compose down -v 2>/dev/null || true
 fi
 
+# Limpiar imágenes del proyecto anterior (pero proteger alpine-stress)
+print_status "Limpiando imágenes locales del proyecto anterior..."
+# Eliminar imágenes locales del proyecto que ya no necesitamos
+docker rmi proyecto1_fase1-backend proyecto1_fase1-nodejs-api proyecto1_fase1-frontend 2>/dev/null || true
+
 # Limpiar imágenes no utilizadas (pero proteger alpine-stress)
 print_status "Limpiando imágenes no utilizadas (protegiendo alpine-stress)..."
-# Usar filtro para excluir alpine-stress del prune
-docker image prune -f --filter "label!=keep=alpine-stress" &> /dev/null
+docker image prune -f &> /dev/null
 
 # Verificar conectividad a Docker Hub
 print_status "Verificando conectividad a Docker Hub..."
@@ -92,24 +96,62 @@ if docker pull hello-world &> /dev/null; then
     print_success "Conectividad a Docker Hub OK"
     docker rmi hello-world &> /dev/null || true
     
-    # Descargar las últimas imágenes
+    # Descargar/actualizar las imágenes desde Docker Hub
     print_status "Descargando últimas imágenes desde Docker Hub..."
-    if command -v docker-compose &> /dev/null; then
-        docker-compose pull
-    else
-        docker compose pull
-    fi
+    print_status "  📦 Descargando pablo03r/202201947-sopes1-fase1-backend:latest..."
+    docker pull pablo03r/202201947-sopes1-fase1-backend:latest
+    
+    print_status "  📦 Descargando pablo03r/202201947-sopes1-fase1-api:latest..."
+    docker pull pablo03r/202201947-sopes1-fase1-api:latest
+    
+    print_status "  📦 Descargando pablo03r/202201947-sopes1-fase1-frontend:latest..."
+    docker pull pablo03r/202201947-sopes1-fase1-frontend:latest
+    
+    print_status "  📦 Descargando postgres:15-alpine..."
+    docker pull postgres:15-alpine
+    
+    print_success "Todas las imágenes descargadas correctamente"
 else
-    print_warning "Problemas de conectividad con Docker Hub, usando imágenes locales"
+    print_warning "Problemas de conectividad con Docker Hub"
+    print_warning "Verificando si las imágenes están disponibles localmente..."
+    
+    # Verificar si las imágenes están disponibles localmente
+    MISSING_IMAGES=()
+    
+    if ! docker inspect pablo03r/202201947-sopes1-fase1-backend:latest &> /dev/null; then
+        MISSING_IMAGES+=("pablo03r/202201947-sopes1-fase1-backend:latest")
+    fi
+    
+    if ! docker inspect pablo03r/202201947-sopes1-fase1-api:latest &> /dev/null; then
+        MISSING_IMAGES+=("pablo03r/202201947-sopes1-fase1-api:latest")
+    fi
+    
+    if ! docker inspect pablo03r/202201947-sopes1-fase1-frontend:latest &> /dev/null; then
+        MISSING_IMAGES+=("pablo03r/202201947-sopes1-fase1-frontend:latest")
+    fi
+    
+    if [ ${#MISSING_IMAGES[@]} -gt 0 ]; then
+        print_error "Las siguientes imágenes no están disponibles localmente:"
+        for img in "${MISSING_IMAGES[@]}"; do
+            echo "  ❌ $img"
+        done
+        print_error "Por favor, verifica tu conexión a internet e intenta nuevamente"
+        exit 1
+    else
+        print_success "Todas las imágenes están disponibles localmente"
+    fi
 fi
 
 # Crear y ejecutar contenedores
-print_status "Creando y ejecutar contenedores..."
+print_status "Creando y ejecutando contenedores..."
 if command -v docker-compose &> /dev/null; then
     if docker-compose up -d; then
         print_success "Contenedores iniciados correctamente"
     else
         print_error "Error al iniciar contenedores"
+        # Mostrar logs para diagnóstico
+        print_status "Mostrando logs para diagnóstico..."
+        docker-compose logs
         exit 1
     fi
 else
@@ -117,13 +159,16 @@ else
         print_success "Contenedores iniciados correctamente"
     else
         print_error "Error al iniciar contenedores"
+        # Mostrar logs para diagnóstico
+        print_status "Mostrando logs para diagnóstico..."
+        docker compose logs
         exit 1
     fi
 fi
 
 # Esperar a que los servicios estén listos
 print_status "Esperando a que los servicios estén listos..."
-sleep 15
+sleep 20
 
 # Verificar estado de los contenedores
 print_status "Verificando estado de los contenedores..."
@@ -136,9 +181,33 @@ fi
 if echo "$CONTAINER_STATUS" | grep -q "running\|Up"; then
     print_success "Servicios están corriendo"
 else
-    print_error "Algunos servicios no están corriendo"
+    print_error "Algunos servicios no están corriendo correctamente"
     echo "$CONTAINER_STATUS"
+    print_status "Mostrando logs para diagnóstico..."
+    if command -v docker-compose &> /dev/null; then
+        docker-compose logs --tail=50
+    else
+        docker compose logs --tail=50
+    fi
     exit 1
+fi
+
+# Verificar conectividad de servicios
+print_status "Verificando conectividad de servicios..."
+sleep 5
+
+# Test de conectividad al backend
+if curl -s http://localhost:8080/health &> /dev/null; then
+    print_success "✅ Backend responde correctamente"
+else
+    print_warning "⚠️  Backend no responde en el endpoint de salud"
+fi
+
+# Test de conectividad al frontend
+if curl -s http://localhost:3000 &> /dev/null; then
+    print_success "✅ Frontend responde correctamente"
+else
+    print_warning "⚠️  Frontend no responde"
 fi
 
 # Mostrar información del despliegue
@@ -147,12 +216,19 @@ echo "============================================"
 echo "✅ DESPLIEGUE COMPLETADO EXITOSAMENTE"
 echo "============================================"
 echo ""
-print_success "Aplicación desplegada correctamente"
+print_success "Aplicación desplegada correctamente usando imágenes de DockerHub"
 echo ""
 echo "🌐 URLs de acceso:"
 echo "   - Frontend (Web): http://localhost:3000"
-echo "   - Backend (API):  http://localhost:8080"
+echo "   - API Node.js:    http://localhost:3001"
+echo "   - Backend (Go):   http://localhost:8080"
 echo "   - Base de Datos:  localhost:5432"
+echo ""
+echo "🐳 Imágenes utilizadas:"
+echo "   - Backend:  pablo03r/202201947-sopes1-fase1-backend:latest"
+echo "   - API:      pablo03r/202201947-sopes1-fase1-api:latest"
+echo "   - Frontend: pablo03r/202201947-sopes1-fase1-frontend:latest"
+echo "   - DB:       postgres:15-alpine"
 echo ""
 echo "📊 Estado de contenedores:"
 if command -v docker-compose &> /dev/null; then
@@ -161,8 +237,11 @@ else
     docker compose ps
 fi
 echo ""
-echo "📝 Para ver logs en tiempo real:"
-echo "   docker-compose logs -f  (o docker compose logs -f)"
+echo "📝 Comandos útiles:"
+echo "   Ver logs:           docker-compose logs -f"
+echo "   Reiniciar:          docker-compose restart"
+echo "   Detener:            docker-compose down"
+echo "   Detener y limpiar:  docker-compose down -v"
 echo ""
 echo "🛑 Para detener la aplicación:"
 echo "   ./Scripts/shutdown_app.sh"
@@ -179,4 +258,4 @@ if [ -n "$ALPINE_STRESS_ID" ]; then
     fi
 fi
 
-print_success "¡Despliegue completado! 🚀"
+print_success "¡Despliegue completado usando DockerHub! 🚀"
