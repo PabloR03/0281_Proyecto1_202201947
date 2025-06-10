@@ -1,114 +1,132 @@
+
+
+---
+
 ## COMANDOS PARA EJECUTAR
 
-### BACKEND
-Nota: Para cada carpeta tener una terminal.
+### 1. **Preparación del Entorno**
 
-Compilando el programa de Go
-```
-go build -o monitor-agent main.go
-```
+#### Crear Módulos
 
-Ejecutando el Programa de Go
-```
-sudo ./monitor-agent
-```
-
---
-
-dockerfile construir  local
-```
-docker build -t monitor-agent .
-```
-
-dockerfile ejecutar  local
-```
-docker run -d --name monitor -p 8080:8080 -v /proc:/host/proc:ro monitor-agent
-```
-
-Para que otros puedan descargarla
-```
-docker pull pablo03r/monitor-agent:1.0
-```
-Ejecutar la imagen descargada
-```
-docker run -d --name monitor -p 8080:8080 pablo03r/monitor-agent:1.0
-```
-
-
-### Script - Modulos
-Crear Modulos
-```
+```bash
 ./install_modules.sh
 ```
 
-Eliminar Modulos
-```
-./remove_modules.sh
-```
+#### Leer Módulos
 
-Leer Modulos
-```
+```bash
 ./read_modules.sh
 ```
 
-### Script - Contenedores
-Crea contenedores para estresar la memoria RAM y la CPU (Dura 1 min luego se inactiva)
-```
-./stress_containers.sh
-```
+#### Eliminar Módulos
 
-Eliminar/Detiene contenedores 
-```
-./remove_containers.sh
+```bash
+./remove_modules.sh
 ```
 
+---
 
-### DOCKER
+### 2. **Construcción y Ejecución de la Aplicación**
 
-Docker-compose Ejecutar el YML
+#### Levantar o Crear Contenedores con Docker Compose
 
-```
-docker-compose up -d
-```
-
-Eliminar todo el Docker compose 
-```
-docker-compose down --rmi all -v
+```bash
+./deploy_app.sh
 ```
 
-Examinar la Base de datos
+#### Detener o Eliminar Contenedores de la App
+
+```bash
+./shutdown_app.sh
 ```
-# Conectarte al contenedor
-docker exec -it metrics-postgres psql -U metrics_202201947 -d metrics_db
 
-# Ejecutar consultas
-\dt  # Listar tablas
-# Ver datos de CPU
-SELECT * FROM cpu_metrics ORDER BY created_at DESC LIMIT 10;
+#### Detener Servicios Manualmente
 
-# Ver datos de RAM
-SELECT * FROM ram_metrics ORDER BY created_at DESC LIMIT 10;
-# Detener servicios
+```bash
 docker-compose down
+```
 
-# Detener y eliminar volúmenes (¡CUIDADO! Borra todos los datos)
+#### Detener y Eliminar Volúmenes
+
+```bash
 docker-compose down -v
 ```
 
-DOCKER-COMPOSE 
+---
+
+### 3. **Simulación de Carga (Stress Testing)**
+
+#### Crear Contenedores para Estresar RAM y CPU (dura 1 min)
+
+```bash
+./stress_containers.sh
 ```
-Comando	Descripción
-docker-compose up	Inicia los servicios usando las imágenes existentes.
-docker-compose up --build	Reconstruye las imágenes antes de iniciar.
-docker-compose down	Detiene y elimina los contenedores (pero no las imágenes).
-docker-compose down -v	Detiene los contenedores y elimina los volúmenes.
+
+#### Detener/Eliminar Contenedores de Prueba
+
+```bash
+./remove_containers.sh
 ```
 
+---
 
-Pasos Finales de Ejecucion 
+### 4. **Acceso a la Base de Datos (PostgreSQL)**
 
-Ejecutar los Scripts
-docker start monitor
-sudo iptables -I INPUT -p tcp --dport 8080 -j ACCEPT
-sudo docker-compose up
+#### Conectarte al Contenedor PostgreSQL
 
+```bash
+docker exec -it metrics-postgres psql -U metrics_202201947 -d metrics_db
+```
+
+#### Ejecutar Consultas:
+
+* Listar Tablas:
+
+```sql
+\dt
+```
+
+* Ver últimos datos de CPU:
+
+```sql
+SELECT * FROM cpu_metrics ORDER BY created_at DESC LIMIT 10;
+```
+
+* Ver últimos datos de RAM:
+
+```sql
+SELECT * FROM ram_metrics ORDER BY created_at DESC LIMIT 10;
+```
+
+---
+
+### 5. **DockerHub (Subir Imágenes)**
+
+#### Login (una sola vez)
+
+```bash
+docker login
+```
+
+#### Backend:
+
+```bash
+docker tag proyecto1_fase1-backend pablo03r/202201947-sopes1-fase1-backend:latest
+docker push pablo03r/202201947-sopes1-fase1-backend:latest
+```
+
+#### API:
+
+```bash
+docker tag proyecto1_fase1-nodejs-api pablo03r/202201947-sopes1-fase1-api:latest
+docker push pablo03r/202201947-sopes1-fase1-api:latest
+```
+
+#### Frontend:
+
+```bash
+docker tag proyecto1_fase1-frontend pablo03r/202201947-sopes1-fase1-frontend:latest
+docker push pablo03r/202201947-sopes1-fase1-frontend:latest
+```
+
+---
