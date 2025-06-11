@@ -98,35 +98,3 @@ SELECT * FROM cpu_metrics ORDER BY created_at DESC LIMIT 100;
 SELECT * FROM ram_metrics ORDER BY created_at DESC LIMIT 10;
 ```
 
----
-
-### 5. **DockerHub (Subir Imágenes)**
-
-#### Login (una sola vez)
-
-```bash
-docker login
-```
-
-#### Backend:
-
-```bash
-docker tag proyecto1_fase1-backend pablo03r/202201947-sopes1-fase1-backend:latest
-docker push pablo03r/202201947-sopes1-fase1-backend:latest
-```
-
-#### API:
-
-```bash
-docker tag proyecto1_fase1-nodejs-api pablo03r/202201947-sopes1-fase1-api:latest
-docker push pablo03r/202201947-sopes1-fase1-api:latest
-```
-
-#### Frontend:
-
-```bash
-docker tag proyecto1_fase1-frontend pablo03r/202201947-sopes1-fase1-frontend:latest
-docker push pablo03r/202201947-sopes1-fase1-frontend:latest
-```
-
----

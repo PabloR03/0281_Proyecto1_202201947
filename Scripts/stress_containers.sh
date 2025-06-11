@@ -55,8 +55,4 @@ for i in {1..10}; do
     fi
 done
 
-# 4. Mostrar métricas de uso con docker stats
-# echo "Mostrando métricas de uso (presiona Ctrl+C para salir)..."
-# docker stats --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"
-
 echo -e "${GREEN}=== Despliegue completado ===${NC}"
