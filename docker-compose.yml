@@ -67,7 +67,7 @@ services:
 
   # Frontend Express
   frontend:
-    image: pablo03r/202201947-sopes1-fase1-frontend:latest
+    image: pablo03r/202201947-sopes1-fase1-frontend:v1.1
     container_name: express-frontend
     ports:
       - "3000:3000"

@@ -70,79 +70,7 @@ const commonChartOptions = {
 
 // Inicializar gráficas
 function initializeCharts() {
-    // Gráfica de CPU
-    const cpuCtx = document.getElementById('cpuChart').getContext('2d');
-    cpuChart = new Chart(cpuCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'CPU %',
-                data: [],
-                borderColor: '#3498db',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: '#3498db',
-                pointBorderColor: '#2980b9',
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            ...commonChartOptions,
-            plugins: {
-                ...commonChartOptions.plugins,
-                title: {
-                    display: true,
-                    text: 'Uso de CPU en Tiempo Real',
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    }
-                }
-            }
-        }
-    });
-
-    // Gráfica de RAM
-    const ramCtx = document.getElementById('ramChart').getContext('2d');
-    ramChart = new Chart(ramCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'RAM %',
-                data: [],
-                borderColor: '#e74c3c',
-                backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: '#e74c3c',
-                pointBorderColor: '#c0392b',
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            ...commonChartOptions,
-            plugins: {
-                ...commonChartOptions.plugins,
-                title: {
-                    display: true,
-                    text: 'Uso de RAM en Tiempo Real',
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    }
-                }
-            }
-        }
-    });
-
-    // Gráfica combinada
+    // Gráfica combinada (CPU y RAM en tiempo real)
     const combinedCtx = document.getElementById('combinedChart').getContext('2d');
     combinedChart = new Chart(combinedCtx, {
         type: 'line',
@@ -236,16 +164,6 @@ function updateCharts(data) {
     // Preparar labels (timestamps)
     const cpuLabels = limitedCpuData.map(item => formatTime(item.timestamp));
     const ramLabels = limitedRamData.map(item => formatTime(item.timestamp));
-    
-    // Actualizar gráfica de CPU
-    cpuChart.data.labels = cpuLabels;
-    cpuChart.data.datasets[0].data = limitedCpuData.map(item => item.porcentajeUso || 0);
-    cpuChart.update('none');
-    
-    // Actualizar gráfica de RAM
-    ramChart.data.labels = ramLabels;
-    ramChart.data.datasets[0].data = limitedRamData.map(item => item.porcentajeUso || 0);
-    ramChart.update('none');
     
     // Actualizar gráfica combinada (usar el dataset más largo como referencia)
     const maxLength = Math.max(limitedCpuData.length, limitedRamData.length);
@@ -345,14 +263,6 @@ async function updateDashboard() {
 // Función para limpiar gráficas
 function clearCharts() {
     if (confirm('¿Estás seguro de que quieres limpiar todas las gráficas?')) {
-        cpuChart.data.labels = [];
-        cpuChart.data.datasets[0].data = [];
-        cpuChart.update();
-        
-        ramChart.data.labels = [];
-        ramChart.data.datasets[0].data = [];
-        ramChart.update();
-        
         combinedChart.data.labels = [];
         combinedChart.data.datasets[0].data = [];
         combinedChart.data.datasets[1].data = [];
@@ -365,7 +275,7 @@ function clearCharts() {
 // Event listeners
 elements.pauseBtn.addEventListener('click', () => {
     isPaused = !isPaused;
-    elements.pauseBtn.textContent = isPaused ? '▶️ Reanudar' : '⏸️ Pausar';
+    elements.pauseBtn.textContent = isPaused ? 'Reanudar' : 'Pausar';
     elements.pauseBtn.style.background = isPaused ? 
         'linear-gradient(135deg, #27ae60, #2ecc71)' : 
         'linear-gradient(135deg, #3498db, #2980b9)';
@@ -388,7 +298,7 @@ elements.timeRange.addEventListener('change', (e) => {
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Iniciando Dashboard de Monitoreo...');
+    console.log('Iniciando Dashboard de Monitoreo...');
     
     // Inicializar gráficas
     initializeCharts();
@@ -399,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Configurar actualización automática cada 5 segundos
     setInterval(updateDashboard, 5000);
     
-    console.log('✅ Dashboard inicializado correctamente');
+    console.log('Dashboard inicializado correctamente');
 });
 
 // Manejo de errores globales

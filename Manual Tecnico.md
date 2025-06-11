@@ -89,7 +89,7 @@ docker exec -it metrics-postgres psql -U metrics_202201947 -d metrics_db
 * Ver últimos datos de CPU:
 
 ```sql
-SELECT * FROM cpu_metrics ORDER BY created_at DESC LIMIT 10;
+SELECT * FROM cpu_metrics ORDER BY created_at DESC LIMIT 100;
 ```
 
 * Ver últimos datos de RAM:

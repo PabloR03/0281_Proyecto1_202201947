@@ -85,9 +85,9 @@ app.get('/health', (req, res) => {
 
 // Iniciar servidor
 app.listen(PORT, () => {
-    console.log(`🌐 Frontend Express ejecutándose en puerto ${PORT}`);
-    console.log(`📈 Dashboard disponible en http://localhost:${PORT}`);
-    console.log(`🔗 Conectando con NodeJS API en ${NODEJS_API_URL}`);
+    console.log(`Frontend Express ejecutándose en puerto ${PORT}`);
+    console.log(`Dashboard disponible en http://localhost:${PORT}`);
+    console.log(`Conectando con NodeJS API en ${NODEJS_API_URL}`);
 });
 
 // Manejo de errores
