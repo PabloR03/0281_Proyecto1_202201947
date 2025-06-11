@@ -10,7 +10,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Almacenamiento de datos en memoria (mantiene la funcionalidad original)
 let metricsData = {
     cpu: [],
     ram: [],
@@ -123,7 +122,7 @@ async function updateMetrics() {
     metricsData.lastUpdate = new Date().toISOString();
 }
 
-// Endpoints API (mantienen la funcionalidad original)
+// Endpoints API
 app.get('/api/metrics', (req, res) => {
     res.json({
         cpu: metricsData.cpu,
@@ -161,7 +160,6 @@ app.get('/api/metrics/latest', (req, res) => {
     res.json(latest);
 });
 
-// Nuevo endpoint para estadísticas de la base de datos (opcional)
 app.get('/api/database/stats', async (req, res) => {
     try {
         const stats = await db.getDatabaseStats();
@@ -192,19 +190,19 @@ async function startService() {
     // Verificar conectividad con la base de datos
     const dbConnected = await db.testConnection();
     if (!dbConnected) {
-        console.log('⚠️  Advertencia: No se pudo conectar con PostgreSQL, continuando sin BD');
+        console.log('Advertencia: No se pudo conectar con PostgreSQL, continuando sin BD');
     }
     
     // Verificar conectividad con el backend
     try {
         const healthCheck = await fetchBackendData(config.endpoints.health);
         if (healthCheck.success) {
-        console.log('✅ Conectividad con backend Go verificada');
+        console.log('Conectividad con backend Go verificada');
         } else {
-        console.log('⚠️  Advertencia: No se pudo conectar con el backend Go');
+        console.log('Advertencia: No se pudo conectar con el backend Go');
         }
     } catch (error) {
-        console.log('⚠️  Advertencia: Error al verificar backend Go:', error.message);
+        console.log('Advertencia: Error al verificar backend Go:', error.message);
     }
     
     // Obtener datos iniciales
@@ -215,10 +213,10 @@ async function startService() {
     
     // Iniciar servidor
     app.listen(config.port, () => {
-        console.log(`🚀 Servicio NodeJS ejecutándose en puerto ${config.port}`);
-        console.log(`📊 Datos disponibles en http://localhost:${config.port}/api/metrics`);
-        console.log(`💾 Estadísticas BD en http://localhost:${config.port}/api/database/stats`);
-        console.log(`🔄 Actualizando métricas cada ${config.updateInterval}ms`);
+        console.log(`Servicio NodeJS ejecutándose en puerto ${config.port}`);
+        console.log(`Datos disponibles en http://localhost:${config.port}/api/metrics`);
+        console.log(`Estadísticas BD en http://localhost:${config.port}/api/database/stats`);
+        console.log(`Actualizando métricas cada ${config.updateInterval}ms`);
     });
 }
 
@@ -233,13 +231,13 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Cerrar conexiones al salir
 process.on('SIGINT', async () => {
-    console.log('\n🛑 Cerrando servicio...');
+    console.log('\n Cerrando servicio...');
     await db.closePool();
     process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-    console.log('\n🛑 Cerrando servicio...');
+    console.log('\n Cerrando servicio...');
     await db.closePool();
     process.exit(0);
 });

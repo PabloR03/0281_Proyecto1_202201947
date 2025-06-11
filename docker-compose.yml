@@ -45,7 +45,7 @@ services:
 
   # API Node.js Data Fetcher
   nodejs-api:
-    image: pablo03r/202201947-sopes1-fase1-api:latest
+    image: pablo03r/202201947-sopes1-fase1-api:v1.1
     container_name: nodejs-data-fetcher
     ports:
       - "3001:3001"

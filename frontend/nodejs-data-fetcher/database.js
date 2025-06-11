@@ -26,10 +26,10 @@ async function testConnection() {
         const client = await pool.connect();
         const result = await client.query('SELECT NOW()');
         client.release();
-        console.log('✅ Conexión a PostgreSQL establecida exitosamente');
+        console.log('Conexión a PostgreSQL establecida exitosamente');
         return true;
     } catch (error) {
-        console.error('❌ Error conectando a PostgreSQL:', error.message);
+        console.error('Error conectando a PostgreSQL:', error.message);
         return false;
     }
 }
@@ -39,18 +39,17 @@ async function insertCPUData(data) {
     const client = await pool.connect();
     try {
         const query = `
-            INSERT INTO cpu_metrics (timestamp, porcentaje_uso, raw_data)
-            VALUES ($1, $2, $3)
+            INSERT INTO cpu_metrics (timestamp, porcentaje_uso)
+            VALUES ($1, $2)
             RETURNING id;
         `;
         const values = [
             new Date(data.timestamp),
-            data.porcentajeUso,
-            JSON.stringify(data.raw)
+            data.porcentajeUso
         ];
-        
+
         const result = await client.query(query, values);
-        console.log(`💾 CPU data guardada en BD con ID: ${result.rows[0].id}`);
+        console.log(`CPU data guardada en BD con ID: ${result.rows[0].id}`);
         return result.rows[0].id;
     } catch (error) {
         console.error('Error insertando datos de CPU:', error.message);
@@ -65,8 +64,8 @@ async function insertRAMData(data) {
     const client = await pool.connect();
     try {
         const query = `
-            INSERT INTO ram_metrics (timestamp, total_mb, libre_mb, uso_mb, porcentaje_uso, raw_data)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO ram_metrics (timestamp, total_mb, libre_mb, uso_mb, porcentaje_uso)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING id;
         `;
         const values = [
@@ -74,12 +73,11 @@ async function insertRAMData(data) {
             data.total,
             data.libre,
             data.uso,
-            data.porcentajeUso,
-            JSON.stringify(data.raw)
+            data.porcentajeUso
         ];
         
         const result = await client.query(query, values);
-        console.log(`💾 RAM data guardada en BD con ID: ${result.rows[0].id}`);
+        console.log(`RAM data guardada en BD con ID: ${result.rows[0].id}`);
         return result.rows[0].id;
     } catch (error) {
         console.error('Error insertando datos de RAM:', error.message);
@@ -113,7 +111,7 @@ async function getDatabaseStats() {
 async function closePool() {
     try {
         await pool.end();
-        console.log('🔌 Pool de conexiones cerrado');
+        console.log('Pool de conexiones cerrado');
     } catch (error) {
         console.error('Error cerrando pool de conexiones:', error.message);
     }
