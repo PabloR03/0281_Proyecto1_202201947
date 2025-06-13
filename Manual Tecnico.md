@@ -1,4 +1,63 @@
 
+# Sistemas Operativos 1 A - Vacaciones Junio 2025
+
+## Proyecto 1
+
+### Segundo Semestre 2024
+
+```plaintext
+Universidad San Carlos de Guatemala  
+Programador: Pablo Andrés Rodríguez Lima  
+Carné: 202201947  
+Correo: pabloa10rodriguez@gmail.com  
+```
+
+## Descripción del Proyecto
+
+Este proyecto consiste en el desarrollo de un entorno de pruebas y herramientas para estudiar y manipular conceptos fundamentales de Sistemas Operativos, incluyendo la interacción con el kernel, manejo de procesos, y comunicación entre módulos usando APIs desarrolladas en Node.js y Go.
+
+Se implementaron scripts automatizados en Bash para facilitar la creación, gestión y limpieza de contenedores Docker que ejecutan aplicaciones de estrés, simulación y monitoreo del sistema. Además, se desarrollaron herramientas para graficar métricas y visualizar datos relevantes para el análisis del comportamiento del sistema operativo bajo carga.
+
+---
+
+## Objetivos
+
+### Objetivo General
+
+* Desarrollar un conjunto de herramientas y scripts para facilitar la experimentación y análisis en entornos controlados de sistemas operativos, usando Docker, APIs en Node.js y Go, y módulos del kernel.
+
+### Objetivos Específicos
+
+* Automatizar la creación y gestión de contenedores Docker para pruebas de estrés en el sistema.
+* Implementar APIs para la interacción entre módulos y la recolección de datos del sistema.
+* Visualizar datos y métricas a través de gráficos generados a partir de las APIs.
+* Documentar y facilitar la comprensión de conceptos relacionados con el kernel y procesos del sistema operativo.
+
+---
+
+## Cómo usar el proyecto
+
+1. **Requisitos Previos**
+
+   * Docker instalado y corriendo en tu máquina.
+   * Node.js y Go configurados para ejecutar los servicios API.
+   * Acceso a la terminal Bash para ejecutar scripts de gestión.
+
+2. **Despliegue de contenedores de estrés**
+   Ejecuta el script `stress_containers.sh` para crear 10 contenedores Docker que generarán carga en CPU, I/O, memoria y disco.
+
+3. **Limpieza de contenedores**
+   Para eliminar los contenedores de estrés creados, ejecuta el script `remove_containers.sh`.
+
+4. **Ejecución de APIs**
+   Levanta los servicios API desarrollados en Node.js y Go para la recolección y exposición de métricas del sistema.
+
+5. **Visualización de métricas**
+   Accede a la interfaz gráfica proporcionada para visualizar los datos recolectados y analizar el comportamiento del sistema operativo bajo pruebas.
+
+
+--- 
+
 ### ./Modulos/cpu_202201947.c
 El programa es un módulo de kernel para Linux diseñado para realizar monitoreo del uso de CPU. Este módulo se integra con el sistema de archivos /proc creando un archivo especial que permite consultar el porcentaje de uso actual de la CPU en formato JSON.
 
@@ -152,100 +211,33 @@ Módulo centralizado de configuración que obtiene variables desde .env o define
 
 ### Dockerfile (NodeJS Data Fetcher)
 
-Este Dockerfile construye una imagen optimizada para producción del servicio Node.js que obtiene y procesa datos desde el backend Go.
+Este Dockerfile construye una imagen optimizada para producción que ejecuta un servicio Node.js encargado de obtener y procesar datos desde un backend desarrollado en Go. La imagen está basada en Alpine Linux para mantenerla ligera y segura.
 
+Explicación paso a paso:
 
-#### Explicación paso a paso:
+Se utiliza la imagen oficial de Node.js versión 18 basada en Alpine Linux, lo que garantiza una base ligera y eficiente para producción.
 
-1. Imagen base:
+Se instala la herramienta curl mediante el gestor de paquetes de Alpine para habilitar el chequeo de salud (HEALTHCHECK) del contenedor.
 
-   ```Dockerfile
-   FROM node:18-alpine
-   ```
+Se define el directorio de trabajo dentro del contenedor en /app, centralizando la ubicación donde se ejecutarán los comandos y se almacenará el código.
 
-   Se usa una imagen oficial ligera de Node.js (versión 18 con Alpine Linux).
+Se copian únicamente los archivos de definición de dependencias (package.json y package-lock.json) para aprovechar la cache de Docker y acelerar futuras construcciones.
 
-2. Instalación de dependencias adicionales:
+Se ejecuta una instalación limpia y estricta de las dependencias de producción usando npm ci --only=production, eliminando las dependencias de desarrollo y limpiando la caché de npm para minimizar el tamaño final de la imagen.
 
-   ```Dockerfile
-   RUN apk add --no-cache curl
-   ```
+Luego se copia el resto del código fuente al directorio de trabajo, asegurando que el contenedor tenga todos los archivos necesarios para la ejecución.
 
-   `curl` se instala para habilitar el `HEALTHCHECK`.
+Se crea un usuario y grupo sin privilegios (no root) con identificadores específicos, como una práctica de seguridad para evitar riesgos al ejecutar el contenedor.
 
-3. Directorio de trabajo:
+Se cambian los permisos de los archivos dentro del directorio de trabajo para que el nuevo usuario tenga propiedad y se establece dicho usuario como el que ejecutará la aplicación.
 
-   ```Dockerfile
-   WORKDIR /app
-   ```
+Se expone el puerto 3001, que es donde el servicio Node.js escuchará las peticiones.
 
-4. Copiar archivos de dependencias:
+Se definen variables de entorno que configuran el modo de producción, el puerto de escucha y la URL base del backend Go, facilitando la configuración del contenedor sin modificar el código.
 
-   ```Dockerfile
-   COPY package*.json ./
-   ```
+Se configura un HEALTHCHECK que ejecuta un comando curl para consultar un endpoint de salud cada 30 segundos, ayudando a Docker a monitorear el estado del servicio y reaccionar ante fallos.
 
-5. Instalación de dependencias de producción:
-
-   ```Dockerfile
-   RUN npm ci --only=production && npm cache clean --force
-   ```
-
-   * `npm ci`: Instalación limpia.
-   * Solo módulos de producción.
-   * Limpieza de caché.
-
-6. Copiar el resto del código:
-
-   ```Dockerfile
-   COPY . .
-   ```
-
-7. Creación de usuario sin privilegios:
-
-   ```Dockerfile
-   RUN addgroup -g 1001 -S nodejs && \
-       adduser -S nodeapi -u 1001 -G nodejs
-   ```
-
-   Buenas prácticas de seguridad: no se ejecuta como `root`.
-
-8. Asignación de permisos:
-
-   ```Dockerfile
-   RUN chown -R nodeapi:nodejs /app
-   USER nodeapi
-   ```
-
-9. Exposición de puerto:
-
-   ```Dockerfile
-   EXPOSE 3001
-   ```
-
-10. Variables de entorno:
-
-    ```Dockerfile
-    ENV NODE_ENV=production
-    ENV NODEJS_PORT=3001
-    ENV BACKEND_URL=http://host.docker.internal:8080
-    ```
-
-11. Healthcheck incorporado:
-
-    ```Dockerfile
-    HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-        CMD curl -f http://localhost:3001/health || exit 1
-    ```
-
-    Verifica salud interna cada 30 segundos.
-
-12. Comando de inicio:
-
-    ```Dockerfile
-    CMD ["node", "index.js"]
-    ```
-
+Finalmente, se establece el comando de inicio que ejecuta la aplicación Node.js mediante node index.js, iniciando el servicio al levantar el contenedor.
 
 ### ./frontend/express-frontend/server.js
 
