@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Colores para los mensajes
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NC='\033[0m' # Sin color
-
 # Definir las opciones de consumo (usando stress)
 OPTIONS=(
     "--cpu 1"                     # CPU
@@ -15,22 +10,7 @@ OPTIONS=(
 
 echo "=== Script para desplegar 10 contenedores de estrés ==="
 
-# 1. Verificar si Docker está instalado
-if ! command -v docker &> /dev/null; then
-    echo -e "${RED}Docker no está instalado. Por favor, instala Docker primero.${NC}"
-    exit 1
-fi
-echo -e "${GREEN}Docker está instalado: $(docker --version)${NC}"
-
-# 2. Verificar si la imagen containerstack/alpine-stress está presente
-echo "Verificando imagen containerstack/alpine-stress..."
-if ! docker image inspect containerstack/alpine-stress > /dev/null 2>&1; then
-    echo -e "${RED}La imagen containerstack/alpine-stress no está disponible${NC}"
-    exit 1
-fi
-echo -e "${GREEN}Imagen containerstack/alpine-stress lista${NC}"
-
-# 3. Crear 10 contenedores con nombres únicos
+# Crear 10 contenedores con nombres únicos
 echo "Desplegando 10 contenedores para estresar recursos..."
 for i in {1..10}; do
     # Seleccionar un tipo de estrés aleatoriamente
@@ -48,11 +28,7 @@ for i in {1..10}; do
 
     # Ejecutar el contenedor en segundo plano con un timeout de 60 segundos
     docker run -d --name "$CONTAINER_NAME" containerstack/alpine-stress sh -c "stress $OPTION --timeout 60s"
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}Contenedor $CONTAINER_NAME creado con opción $OPTION${NC}"
-    else
-        echo -e "${RED}Error al crear $CONTAINER_NAME${NC}"
-    fi
+    echo "Contenedor $CONTAINER_NAME creado con opción $OPTION"
 done
 
-echo -e "${GREEN}=== Despliegue completado ===${NC}"
+echo "=== Despliegue completado ==="

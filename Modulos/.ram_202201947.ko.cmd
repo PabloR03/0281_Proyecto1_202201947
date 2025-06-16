@@ -1,1 +1,0 @@
-savedcmd_ram_202201947.ko := ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T /usr/src/linux-headers-6.14.0-15-generic/scripts/module.lds -o ram_202201947.ko ram_202201947.o ram_202201947.mod.o .module-common.o
